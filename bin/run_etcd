@@ -11,7 +11,7 @@ CERT_ROOT=/root/ssl-cert
 ETCD_IMAGE=quay.io/philipsoutham/etcd
 # this from https://discovery.etcd.io/new
 #DISCOVERY_TOKEN=https://discovery.etcd.io/e4875594571a2bb82e03faa11b8a52ec
-#DAEMON_MODE="-d"
+DAEMON_MODE="-d"
 
 display_help()
 {
