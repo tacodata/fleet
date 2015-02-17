@@ -1,0 +1,116 @@
+#!/bin/sh
+# first argument is host, like c1.tacodata.com, mandatory
+
+SIGN_DIR=~/ssl-cert
+CERT_DIR=~/ssl-cert
+
+display_help()
+{
+    echo "Usage: $0 [ -h -v -d CERT_DIR] HOSTNAME"
+    echo "  -h help message (this)"
+    echo "  -v verbose"
+    echo "  -i IP   Yes, the cert needs the IP address of the HOSTNAME, arrgghh"
+    echo "  -s SIGN_DIR  this is the signing directory, must exist, default : $SIGN_DIR"
+    echo "  -d CERT_DIR  this is the cert directory, must not exist, default : $CERT_DIR"
+    echo " HOSTNAME the hostname we are generating the self signed cert for"
+}
+
+
+while :
+do
+    case "$1" in
+      -h | --help)
+	  display_help  # Call your function
+	  # no shifting needed here, we're done.
+	  exit 0
+	  ;;
+      -v | --verbose)
+          #  It's better to assign a string, than a number like "verbose=1"
+	  #  because if you're debugging script with "bash -x" code like this:
+	  #
+	  #    if [ "$verbose" ] ...
+	  #
+	  #  You will see:
+	  #
+	  #    if [ "verbose" ] ...
+	  #
+          #  Instead of cryptic
+	  #
+	  #    if [ "1" ] ...
+	  #
+	  verbose="verbose"
+	  shift
+	  ;;
+      -d | --directory)
+	  # output directory
+	  CERT_DIR="$2"
+	  shift 2
+	  ;;
+      -i | --ip)
+	  # IP address of host
+	  IP="$2"
+	  shift 2
+	  ;;
+      -s | --signdir)
+	  # sign dir directory
+	  SIGN_DIR="$2"
+	  shift 2
+	  ;;
+      --) # End of all options
+	  shift
+	  break;
+	  ;;
+      -*)
+	  echo "Error: Unknown option: $1" >&2
+	  exit 1
+	  ;;
+      *)  # No more options
+	  break
+	  ;;
+    esac
+done
+
+if [ $# -ne 1 ]; then
+    echo 'host required'
+    display_help
+    exit 1
+fi
+
+if [ -d $CERT_DIR ]; then
+    echo 'Output directory exists, remove it and run this again :'$CERT_DIR
+    display_help
+    exit 1
+fi
+
+HOST=$1
+
+if [ $verbose ]; then
+    echo 'HOST is : '$HOST
+    echo 'IP is : '$IP
+    echo 'CERT output directory is : '$CERT_DIR
+fi
+
+mkdir $CERT_DIR
+cd $CERT_DIR
+(
+openssl genrsa -out server-key.pem 2048
+openssl req -subj "/CN=$HOST" -new -key server-key.pem -out server.csr
+echo extendedKeyUsage = clientAuth,serverAuth > extfile.cnf
+echo subjectAltName = IP:127.0.0.1,IP:$IP >> extfile.cnf
+openssl x509 -req -days 365 -in server.csr -CA $SIGN_DIR/ca.pem -CAkey $SIGN_DIR/ca-key.pem -CAcreateserial -out server-cert.pem -extfile extfile.cnf
+openssl genrsa -out key.pem 2048
+openssl req -subj '/CN=client' -new -key key.pem -out client.csr
+echo extendedKeyUsage = clientAuth > extfile.cnf
+openssl x509 -req -days 365 -in client.csr -CA $SIGN_DIR/ca.pem -CAkey $SIGN_DIR/ca-key.pem -CAcreateserial -out cert.pem -extfile extfile.cnf
+rm -f client.csr server.csr
+cp $SIGN_DIR/ca-key.pem .
+cp $SIGN_DIR/ca.pem .
+chmod 0400 ca-key.pem key.pem server-key.pem
+chmod 0444 ca.pem server-cert.pem cert.pem
+) 2> /tmp/error_out.$$
+
+if [ $verbose ]; then
+    cat /tmp/error_out.$$ 1>&2
+fi
+
+rm -f /tmp/error_out.$$
