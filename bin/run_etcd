@@ -1,0 +1,169 @@
+#!/bin/bash
+# this is a simple script to help start up etcd on a docker host
+
+MACHINE=unknown
+AMACHINE=unknown
+CERT_DIR=unknown
+DOMAIN=unknown
+PEER_PORT=7001
+LOCAL_PORT=4001
+CERT_ROOT=/root/ssl-cert
+ETCD_IMAGE=quay.io/philipsoutham/etcd
+
+display_help()
+{
+    echo "Usage: $0 [ -h -v -p PEER_PORT -l LOCAL_PORT -c CERT_DIR] -m MACHINE -g all etcd machine list -d domain"
+    echo "  -h help message (this)"
+    echo "  -v verbose"
+    echo "  -m MACHINE (this is the hostname part of a fqdn)"
+    echo "  -g list all machines in the group, just the HOSTNAME"
+    echo "  -d DOMAIN (the rest of the fqdn)"
+    echo "  -p PEER_PORT, default is : $PEER_PORT"
+    echo "  -l LOCAL CLIENT PORT, default is : $LOCAL_PORT"
+    echo "  -c cert dir, if omitted will be constructed using $CERT_ROOT/MACHINE.DOMAIN"
+}
+
+while :
+do
+    case "$1" in
+      -h | --help)
+	  display_help  # Call your function
+	  # no shifting needed here, we're done.
+	  exit 0
+	  ;;
+      -v | --verbose)
+	  verbose="verbose"
+	  shift
+	  ;;
+      -m | --machine)
+	  MACHINE="$2"
+	  shift 2
+	  ;;
+      -d | --domain)
+	  DOMAIN="$2"
+	  shift 2
+	  ;;
+      -c | --cert_dir)
+	  CERT_DIR="$2"
+	  shift 2
+	  ;;
+      -g | --group)
+	  AMACHINE="$2"
+	  shift 2
+	  ;;
+      -p | --peer_port)
+	  PEER_PORT="$2"
+	  shift 2
+	  ;;
+      -l | --local_port)
+	  LOCAL_PORT="$2"
+	  shift 2
+	  ;;
+      --) # End of all options
+	  shift
+	  break;
+	  ;;
+      -*)
+	  echo "Error: Unknown option: $1" >&2
+	  exit 1
+	  ;;
+      *)  # No more options
+	  break
+	  ;;
+    esac
+done
+
+if [ $# -ne 0 ]; then
+    echo 'extra arguments ignored $*' 1>&2
+    display_help
+    exit 1
+fi
+
+if [ "$MACHINE" == "unknown" ]; then
+    echo 'must specify -m MACHINE' 1>&2
+    display_help
+    exit 1
+fi
+
+if [ "$DOMAIN" == "unknown" ]; then
+    echo 'must specify -d DOMAIN' 1>&2
+    display_help
+    exit 1
+fi
+
+if [ "$AMACHINE" == "unknown" ]; then
+    echo 'must specify -g group machine list' 1>&2
+    display_help
+    exit 1
+fi
+
+if [ "$CERT_DIR" == "unknown" ]; then
+    CERT_DIR=$CERT_ROOT/$MACHINE.$DOMAIN
+fi
+
+#if [ ! -d $CERT_DIR ]; then
+#    echo 'CERT_DIR "$CERT_DIR" does not exist or is inaccessible' 1>&2
+#    display_help
+#    exit 1
+#fi
+
+HOST=$1
+
+if [ $verbose ]; then
+    echo 'MACHINE is : '$MACHINE
+    echo 'AMACHINE is : '$AMACHINE
+    echo 'DOMAIN is : '$DOMAIN
+    echo 'PEER_PORT is : '$PEER_PORT
+    echo 'LOCAL_POST is : '$LOCAL_POST
+    echo 'CERT directory is : '$CERT_DIR
+fi
+
+# our external ip
+MY_IP=$(dig +short $MACHINE.$DOMAIN)
+
+# all ip addresses for all machines in the group
+AIP=$(for i in $AMACHINE; do dig +short $i.$DOMAIN; done)
+
+# all ip addresses except for our current machine
+OIP=$(for i in $AMACHINE; do if [ $MACHINE != $i ] ; then dig +short $i.$DOMAIN; fi; done)
+
+# create a comma separated list of IP:PEER_PORT,...
+OIPP=$(for i in $OIP; do echo $i:$PEER_PORT; done)
+OIPPC=$(echo $OIPP | sed 's/ /,/g')
+
+if [ $verbose ]; then
+    echo 'MY_IP is : '$MY_IP
+    echo 'AIP is : '$AIP
+    echo 'OIP is : '$OIP
+    echo 'OIPP is : '$OIPP
+    echo 'OIPPC is : '$OIPPC
+fi
+
+CMD=$(cat <<EOC
+docker run 
+    -p $MY_IP:$LOCAL_PORT:$LOCAL_PORT -p $MY_IP:$PEER_PORT:$PEER_PORT 
+    -v $CERT_DIR:/cert 
+    $ETCD_IMAGE 
+    --name $MACHINE.$DOMAIN 
+    --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem 
+    --peer-addr=$MY_IP:$PEER_PORT 
+    --peers=$OIPPC
+EOC
+)
+
+if [ "$verbose" ]; then
+    echo "Running command :"
+    echo "---"
+    echo $CMD
+    echo "---"
+fi
+
+$CMD
+#docker run \
+#    -p $MY_IP:$LOCAL_PORT:$LOCAL_PORT -p $MY_IP:$PEER_PORT:$PEER_PORT \
+#    -v $CERT_DIR:/cert \
+#    $ETCD_IMAGE \
+#    --name $MACHINE.$DOMAIN \
+#    --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem \
+#    --peer-addr=$MY_IP:$PEER_PORT \
+#    --peers=$OIPPC
