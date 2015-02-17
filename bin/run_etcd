@@ -155,7 +155,7 @@ fi
 CMD=(
 docker run 
     $DAEMON_MODE
-    -p "$MY_IP":"$LOCAL_PORT":"$LOCAL_PORT" -p "$MY_IP":"$PEER_PORT":"$PEER_PORT"
+    -p "$LOCAL_PORT":"$LOCAL_PORT" -p :"$PEER_PORT":"$PEER_PORT"
     -v "$CERT_DIR":/cert 
     "$ETCD_IMAGE" 
     --name "$MACHINE.$DOMAIN"
