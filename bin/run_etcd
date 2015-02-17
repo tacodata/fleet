@@ -140,26 +140,25 @@ if [ $verbose ]; then
     echo 'OIPPC is : '$OIPPC
 fi
 
-CMD=$(cat <<EOC
+CMD=(
 docker run 
-    $DAEMON_MODE
-    -p $MY_IP:$LOCAL_PORT:$LOCAL_PORT -p $MY_IP:$PEER_PORT:$PEER_PORT 
-    -v $CERT_DIR:/cert 
-    $ETCD_IMAGE 
-    --name $MACHINE.$DOMAIN 
+    "$DAEMON_MODE"
+    -p "$MY_IP":"$LOCAL_PORT":"$LOCAL_PORT" -p "$MY_IP":"$PEER_PORT":"$PEER_PORT"
+    -v "$CERT_DIR":/cert 
+    "$ETCD_IMAGE" 
+    --name "$MACHINE.$DOMAIN"
     --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem 
-    --peer-addr=$MY_IP:$PEER_PORT 
-    --peers=$OIPPC
-EOC
+    --peer-addr="$MY_IP":"$PEER_PORT"
+    --peers="$OIPPC"
 )
 
 if [ "$verbose" ]; then
     echo "Running command :"
     echo "---"
-    echo $CMD
+    echo "${CMD[@]}"
     echo "---"
 fi
 
-$CMD
+"${CMD[@]}"
 
 exit $?
