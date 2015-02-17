@@ -158,10 +158,10 @@ docker run
     --addr="$MY_IP":"$LOCAL_PORT"
     --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem 
     --peer-addr="$MY_IP":"$PEER_PORT"
-    --peers="$OIPPC"
     --discovery="$DISCOVERY_TOKEN"
     $ETCD_VERBOSE
 )
+#    --peers="$OIPPC"
 
 if [ "$verbose" ]; then
     echo "Running command :"
