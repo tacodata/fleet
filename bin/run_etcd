@@ -11,7 +11,7 @@ CERT_ROOT=/root/ssl-cert
 ETCD_IMAGE=quay.io/philipsoutham/etcd
 ETCD_VERBOSE="-v"
 # this from https://discovery.etcd.io/new
-DISCOVERY_TOKEN=https://discovery.etcd.io/e4875594571a2bb82e03faa11b8a52ec
+#DISCOVERY_TOKEN=https://discovery.etcd.io/e4875594571a2bb82e03faa11b8a52ec
 #DAEMON_MODE="-d"
 
 display_help()
@@ -20,12 +20,12 @@ display_help()
     echo "  -h help message (this)"
     echo "  -v verbose"
     echo "  -m MACHINE (this is the hostname part of a fqdn)"
-    echo "  -g list all machines in the group, just the HOSTNAME"
+    echo "  -g list all machines in the group (master should only list itself)"
     echo "  -d DOMAIN (the rest of the fqdn)"
     echo "  -p PEER_PORT, default is : $PEER_PORT"
     echo "  -l LOCAL CLIENT PORT, default is : $LOCAL_PORT"
     echo "  -c cert dir, if omitted will be constructed using $CERT_ROOT/MACHINE.DOMAIN"
-    echo "  -t discovery_token, like https://discovery.etcd.io/7202639aa48bf17fcc09699809227f80"
+#    echo "  -t discovery_token, like https://discovery.etcd.io/7202639aa48bf17fcc09699809227f80"
 }
 
 while :
@@ -139,6 +139,10 @@ OIP=$(for i in $AMACHINE; do if [ $MACHINE != $i ] ; then dig +short $i.$DOMAIN;
 # create a comma separated list of IP:PEER_PORT,...
 OIPP=$(for i in $OIP; do echo $i:$PEER_PORT; done)
 OIPPC=$(echo $OIPP | sed 's/ /,/g')
+PEERS=""
+if [ "$OIPPC" != "" ]; then
+    PEERS="--peers=$OIPPC"
+fi
 
 if [ $verbose ]; then
     echo 'MY_IP is : '$MY_IP
@@ -158,10 +162,10 @@ docker run
     --addr="$MY_IP":"$LOCAL_PORT"
     --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem 
     --peer-addr="$MY_IP":"$PEER_PORT"
-    --discovery="$DISCOVERY_TOKEN"
+    $PEERS
     $ETCD_VERBOSE
 )
-#    --peers="$OIPPC"
+#    --discovery="$DISCOVERY_TOKEN"
 
 if [ "$verbose" ]; then
     echo "Running command :"
