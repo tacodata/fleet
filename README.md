@@ -34,7 +34,7 @@ To start up etcd on each of the hosts:
 # the current machine
 MACHINE=c1
 # all machines in the etcd group
-AMACHINE="c1 c2 c3 c4 w1"
+AMACHINE="c1 c2 c3"
 # the domain each machine (host) is at
 DOMAIN=tacodata.com
 # our external ip
@@ -69,15 +69,20 @@ Usage: run_etcd [ -h -v -p PEER_PORT -l LOCAL_PORT -c CERT_DIR] -m MACHINE -g al
   -h help message (this)
   -v verbose
   -m MACHINE (this is the hostname part of a fqdn)
-  -g list all machines in the group, just the HOSTNAME
+  -g list all machines in the group (master should only list itself)
   -d DOMAIN (the rest of the fqdn)
   -p PEER_PORT, default is : 7001
   -l LOCAL CLIENT PORT, default is : 4001
   -c cert dir, if omitted will be constructed using /root/ssl-cert/MACHINE.DOMAIN
 ```
 
-so, for the above example, I would run (on that host):
+so, for the above example, I would run (on the appropriate hosts):
 
 ```
-run_etcd -m c1 -g "c1 c2 c3 c4 w1" -d tacodata.com
+c1: run_etcd -m c1 -g "c1" -d tacodata.com
+c2: run_etcd -m c2 -g "c1 c2 c3" -d tacodata.com
+c3: run_etcd -m c3 -g "c1 c2 c3" -d tacodata.com
 ```
+
+Note: pick any one of them to run with the -g switch with only their hostname.  The initial 'master' node
+doesn't have any peers to contact, so, it must be started without any peers.
