@@ -84,5 +84,12 @@ c2: run_etcd -m c2 -g "c1 c2 c3" -d tacodata.com
 c3: run_etcd -m c3 -g "c1 c2 c3" -d tacodata.com
 ```
 
+for a generic way to run it on any machine:
+
+```
+master: run_etcd -m `hostname -s` -g `hostname -s` -d `hostname -d`
+members: run_etcd -m `hostname -s` -g `c1 c2 c3 (all member names)` -d `hostname -d`
+```
+
 Note: pick any one of them to run with the -g switch with only their hostname.  The initial 'master' node
 doesn't have any peers to contact, so, it must be started without any peers.
