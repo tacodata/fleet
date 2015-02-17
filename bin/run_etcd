@@ -10,6 +10,8 @@ LOCAL_PORT=4001
 CERT_ROOT=/root/ssl-cert
 ETCD_IMAGE=quay.io/philipsoutham/etcd
 ETCD_VERBOSE="-v"
+# this from https://discovery.etcd.io/new
+DISCOVERY_TOKEN=https://discovery.etcd.io/7202639aa48bf17fcc09699809227f80
 #DAEMON_MODE="-d"
 
 display_help()
@@ -23,6 +25,7 @@ display_help()
     echo "  -p PEER_PORT, default is : $PEER_PORT"
     echo "  -l LOCAL CLIENT PORT, default is : $LOCAL_PORT"
     echo "  -c cert dir, if omitted will be constructed using $CERT_ROOT/MACHINE.DOMAIN"
+    echo "  -t discovery_token, like https://discovery.etcd.io/7202639aa48bf17fcc09699809227f80"
 }
 
 while :
@@ -59,6 +62,10 @@ do
 	  ;;
       -l | --local_port)
 	  LOCAL_PORT="$2"
+	  shift 2
+	  ;;
+      -t | --token)
+	  DISCOVERY_TOKEN="$2"
 	  shift 2
 	  ;;
       --) # End of all options
@@ -152,6 +159,7 @@ docker run
     --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem 
     --peer-addr="$MY_IP":"$PEER_PORT"
     --peers="$OIPPC"
+    --discovery="$DISCOVERY_TOKEN"
     $ETCD_VERBOSE
 )
 
