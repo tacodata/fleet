@@ -9,7 +9,6 @@ PEER_PORT=7001
 LOCAL_PORT=4001
 CERT_ROOT=/root/ssl-cert
 ETCD_IMAGE=quay.io/philipsoutham/etcd
-ETCD_VERBOSE="-v"
 # this from https://discovery.etcd.io/new
 #DISCOVERY_TOKEN=https://discovery.etcd.io/e4875594571a2bb82e03faa11b8a52ec
 #DAEMON_MODE="-d"
@@ -38,6 +37,7 @@ do
 	  ;;
       -v | --verbose)
 	  verbose="verbose"
+          ETCD_VERBOSE="-v"
 	  shift
 	  ;;
       -m | --machine)
