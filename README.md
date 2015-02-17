@@ -93,3 +93,75 @@ members: run_etcd -m `hostname -s` -g `c1 c2 c3 (all member names)` -d `hostname
 
 Note: pick any one of them to run with the -g switch with only their hostname.  The initial 'master' node
 doesn't have any peers to contact, so, it must be started without any peers.
+
+to pick up the leader and all followers, from any node, run:
+
+```
+# curl -s -L 127.0.0.1:4001/v2/stats/leader | python -mjson.tool
+```
+
+Which produces output like:
+
+```
+{
+    "followers": {
+        "c2.tacodata.com": {
+            "counts": {
+                "fail": 0,
+                "success": 4331
+            },
+            "latency": {
+                "average": 1.327962363195568,
+                "current": 1.168508,
+                "maximum": 44.635728,
+                "minimum": 0.915003,
+                "standardDeviation": 0.718127472886556
+            }
+        },
+        "c3.tacodata.com": {
+            "counts": {
+                "fail": 0,
+                "success": 4268
+            },
+            "latency": {
+                "average": 1.1678028870665418,
+                "current": 5.817836,
+                "maximum": 26.690555,
+                "minimum": 0.786489,
+                "standardDeviation": 0.5571811508915141
+            }
+        }
+    },
+    "leader": "c1.tacodata.com"
+}
+```
+
+To set a value (from a etcd local host):
+
+```
+# curl -L -s http://127.0.0.1:4001/v2/keys/message -XPUT -d value="Hello Snoop Dog"  | python -mjson.tool
+{
+    "action": "set",
+    "node": {
+        "createdIndex": 5,
+        "key": "/message",
+        "modifiedIndex": 5,
+        "value": "Hello Snoop Dog"
+    }
+}
+```
+
+To get a value, from any etcd local host:
+
+```
+# curl -L -s http://127.0.0.1:4001/v2/keys/message -XGET | python -mjson.tool
+{
+    "action": "get",
+    "node": {
+        "createdIndex": 5,
+        "key": "/message",
+        "modifiedIndex": 5,
+        "value": "Hello Snoop Dog"
+    }
+}
+```
