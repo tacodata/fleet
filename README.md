@@ -50,6 +50,7 @@ LOCAL_PORT=4001
 CERT_DIR=/root/ssl-cert/$MACHINE.$DOMAIN
 ETCD_IMAGE=quay.io/philipsoutham/etcd
 docker run \
+    -d \
     -p $MY_IP:$LOCAL_PORT:$LOCAL_PORT -p $MY_IP:$PEER_PORT:$PEER_PORT \
     -v $CERT_DIR:/cert \
     $ETCD_IMAGE \
@@ -57,4 +58,26 @@ docker run \
     --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem \
     --peer-addr=$MY_IP:$PEER_PORT \
     --peers=$OIPPC
+```
+
+The script above is tedious, there is a script called run_etcd which executes in in the
+bin directory:
+
+```
+run_etcd -h
+Usage: run_etcd [ -h -v -p PEER_PORT -l LOCAL_PORT -c CERT_DIR] -m MACHINE -g all etcd machine list -d domain
+  -h help message (this)
+  -v verbose
+  -m MACHINE (this is the hostname part of a fqdn)
+  -g list all machines in the group, just the HOSTNAME
+  -d DOMAIN (the rest of the fqdn)
+  -p PEER_PORT, default is : 7001
+  -l LOCAL CLIENT PORT, default is : 4001
+  -c cert dir, if omitted will be constructed using /root/ssl-cert/MACHINE.DOMAIN
+```
+
+so, for the above example, I would run (on that host):
+
+```
+run_etcd -m c1 -g "c1 c2 c3 c4 w1" -d tacodata.com
 ```
