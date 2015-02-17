@@ -145,14 +145,14 @@ CMD=(
 docker run 
     "$DAEMON_MODE"
     -p "$MY_IP":"$LOCAL_PORT":"$LOCAL_PORT" -p "$MY_IP":"$PEER_PORT":"$PEER_PORT"
-    "$CERT_DIR":/cert 
+    -v "$CERT_DIR":/cert 
     "$ETCD_IMAGE" 
-    "$ETCD_VERBOSE" 
     --name "$MACHINE.$DOMAIN"
     --addr="$MY_IP":"$LOCAL_PORT"
     --peer-cert-file=/cert/server-cert.pem --peer-key-file=/cert/server-key.pem --peer-ca-file=/cert/ca.pem 
     --peer-addr="$MY_IP":"$PEER_PORT"
     --peers="$OIPPC"
+    "$ETCD_VERBOSE" 
 )
 
 if [ "$verbose" ]; then
